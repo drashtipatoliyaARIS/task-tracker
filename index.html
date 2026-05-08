@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Task Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0f0f0f;
+      --bg-surface:  #161616;
+      --bg-raised:   #1e1e1e;
+      --bg-hover:    #242424;
+      --border:      rgba(255,255,255,0.08);
+      --border-md:   rgba(255,255,255,0.14);
+      --border-hi:   rgba(255,255,255,0.22);
+      --text-1:      #f0ede8;
+      --text-2:      #9b9690;
+      --text-3:      #5a5652;
+      --accent:      #c8a96e;      /* warm amber */
+      --accent-dim:  rgba(200,169,110,0.12);
+      --accent-glow: rgba(200,169,110,0.22);
+      --green:       #4caf88;
+      --green-dim:   rgba(76,175,136,0.12);
+      --red:         #e05c5c;
+      --red-dim:     rgba(224,92,92,0.10);
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   14px;
+      --font-sans:   'DM Sans', system-ui, sans-serif;
+      --font-mono:   'DM Mono', 'Fira Code', monospace;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.4);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.5);
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text-1);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 48px 16px 80px;
+    }
+
+    /* ── Layout ───────────────────────────────────────── */
+    .container {
+      width: 100%;
+      max-width: 580px;
+    }
+
+    /* ── Header ───────────────────────────────────────── */
+    .header {
+      margin-bottom: 36px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .app-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-1);
+      letter-spacing: -0.3px;
+    }
+
+    .date-label {
+      font-size: 13px;
+      color: var(--text-3);
+      font-weight: 400;
+    }
+
+    .app-subtitle {
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
+    /* ── Add Task Bar ─────────────────────────────────── */
+    .add-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+
+    .add-bar input {
+      flex: 1;
+      height: 42px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-md);
+      border-radius: var(--radius-md);
+      color: var(--text-1);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      padding: 0 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .add-bar input::placeholder {
+      color: var(--text-3);
+    }
+
+    .add-bar input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .add-btn {
+      height: 42px;
+      padding: 0 20px;
+      background: var(--accent);
+      color: #1a1200;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(200,169,110,0.25);
+    }
+
+    .add-btn:hover {
+      opacity: 0.9;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .add-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* ── Section ──────────────────────────────────────── */
+    .section {
+      margin-bottom: 28px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    .count-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-2);
+      font-family: var(--font-mono);
+    }
+
+    .section-action {
+      font-size: 11px;
+      color: var(--text-3);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      transition: color 0.15s, background 0.15s;
+      font-family: var(--font-sans);
+    }
+
+    .section-action:hover {
+      color: var(--red);
+      background: var(--red-dim);
+    }
+
+    /* ── Task Item ────────────────────────────────────── */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 13px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+      animation: fadeSlide 0.2s ease both;
+    }
+
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(-5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-item:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-md);
+    }
+
+    .task-item.is-done {
+      opacity: 0.55;
+    }
+
+    /* circle checkbox */
+    .cb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-hi);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      outline: none;
+      position: relative;
+    }
+
+    .cb:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px var(--green-dim);
+    }
+
+    .cb.checked {
+      border-color: var(--green);
+      background: var(--green);
+      box-shadow: 0 0 0 3px var(--green-dim);
+    }
+
+    .cb.checked::after {
+      content: '';
+      width: 5px;
+      height: 9px;
+      border: 2px solid #0a1f16;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translateY(-1px);
+      display: block;
+    }
+
+    /* task text */
+    .task-text {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text-1);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .task-text.done-text {
+      text-decoration: line-through;
+      color: var(--text-3);
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .task-time {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--font-mono);
+    }
+
+    .del-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-3);
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 5px;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .task-item:hover .del-btn { opacity: 1; }
+
+    .del-btn:hover {
+      color: var(--red);
+      background: var(--red-dim);
+    }
+
+    .edit-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-3);
+      line-height: 1;
+      padding: 3px 5px;
+      border-radius: 5px;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+    }
+
+    .task-item:hover .edit-btn { opacity: 1; }
+
+    .edit-btn:hover {
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .task-edit-input {
+      flex: 1;
+      background: var(--bg-raised);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
+      color: var(--text-1);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      padding: 3px 8px;
+      outline: none;
+      box-shadow: 0 0 0 3px var(--accent-dim);
+      min-width: 0;
+    }
+
+    /* ── Empty State ──────────────────────────────────── */
+    .empty {
+      padding: 18px 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
+    /* ── Divider ──────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    /* ── EOD Summary ──────────────────────────────────── */
+    .eod-section {
+      margin-top: 4px;
+    }
+
+    .eod-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--text-2);
+      line-height: 1.9;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 80px;
+    }
+
+    .eod-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .eod-stats {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--font-mono);
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 14px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-md);
+      border-radius: var(--radius-md);
+      color: var(--text-2);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-hi);
+      color: var(--text-1);
+    }
+
+    .copy-btn.copied {
+      color: var(--green);
+      border-color: var(--green);
+      background: var(--green-dim);
+    }
+
+    .copy-icon {
+      width: 13px;
+      height: 13px;
+    }
+
+    /* ── Toasts / Micro feedback ──────────────────────── */
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toastOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* ── Scrollbar (webkit) ───────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+
+    /* ── Responsive ───────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 28px 12px 60px; }
+      .app-title { font-size: 18px; }
+      .add-btn { padding: 0 14px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <h1 class="app-title">Daily Tasks</h1>
+      <span class="date-label" id="dateLabel"></span>
+    </div>
+    <p class="app-subtitle">Track what you're working on and generate an EOD update.</p>
+  </div>
+
+  <!-- Add Bar -->
+  <div class="add-bar">
+    <input type="text" id="taskInput" placeholder="Add a new task…" autocomplete="off" />
+    <button class="add-btn" id="addBtn">+ Add</button>
+  </div>
+
+  <!-- To Do -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        To Do
+        <span class="count-pill" id="todoCount">0</span>
+      </div>
+    </div>
+    <div class="task-list" id="todoList"></div>
+  </div>
+
+  <!-- Done Today -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        Done Today
+        <span class="count-pill" id="doneCount">0</span>
+      </div>
+      <button class="section-action" id="clearDoneBtn">Clear all</button>
+    </div>
+    <div class="task-list" id="doneList"></div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- EOD Summary -->
+  <div class="eod-section">
+    <div class="section-head">
+      <div class="section-title">EOD Summary</div>
+    </div>
+    <div class="eod-box" id="eodBox"></div>
+    <div class="eod-footer">
+      <span class="eod-stats" id="eodStats"></span>
+      <button class="copy-btn" id="copyBtn">
+        <svg class="copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="5" width="9" height="9" rx="1.5"/>
+          <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/>
+        </svg>
+        Copy summary
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const STORAGE_KEY_TODO  = 'dtt_todos';
+  const STORAGE_KEY_DONE  = () => 'dtt_done_' + todayKey();
+
+  let todos = [];
+  let dones = [];
+
+  /* ── Utils ── */
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function timeStr() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function dateStr() {
+    return new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  }
+
+  /* ── Persist ── */
+  function saveTodos() {
+    localStorage.setItem(STORAGE_KEY_TODO, JSON.stringify(todos));
+  }
+
+  function saveDones() {
+    localStorage.setItem(STORAGE_KEY_DONE(), JSON.stringify(dones));
+  }
+
+  function load() {
+    try { todos = JSON.parse(localStorage.getItem(STORAGE_KEY_TODO)) || []; }
+    catch(e) { todos = []; }
+    try { dones = JSON.parse(localStorage.getItem(STORAGE_KEY_DONE())) || []; }
+    catch(e) { dones = []; }
+
+    // Auto-clear done lists from previous days
+    const todayDoneKey = STORAGE_KEY_DONE();
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('dtt_done_') && k !== todayDoneKey)
+      .forEach(k => localStorage.removeItem(k));
+  }
+
+  /* ── Render ── */
+  function render() {
+    const todoList = document.getElementById('todoList');
+    const doneList = document.getElementById('doneList');
+
+    document.getElementById('todoCount').textContent = todos.length;
+    document.getElementById('doneCount').textContent = dones.length;
+
+    /* -- todo items -- */
+    if (todos.length === 0) {
+      todoList.innerHTML = '<div class="empty">Nothing pending — you\'re all clear ✓</div>';
+    } else {
+      todoList.innerHTML = todos.map((t, i) => `
+        <div class="task-item" data-i="${i}">
+          <button class="cb" onclick="completeTask(${i})" title="Mark as done" aria-label="Complete task"></button>
+          <span class="task-text" ondblclick="startEdit('todo',${i},this)">${escHtml(t.text)}</span>
+          <div class="task-meta">
+            <button class="edit-btn" onclick="startEdit('todo',${i},this.closest('.task-item').querySelector('.task-text'))" title="Edit task" aria-label="Edit task">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5z"/>
+              </svg>
+            </button>
+            <button class="del-btn" onclick="deleteTask('todo', ${i})" title="Delete" aria-label="Delete task">&#x2715;</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* -- done items -- */
+    if (dones.length === 0) {
+      doneList.innerHTML = '<div class="empty">Nothing completed yet today</div>';
+    } else {
+      doneList.innerHTML = dones.map((t, i) => `
+        <div class="task-item is-done" data-i="${i}">
+          <button class="cb checked" onclick="undoTask(${i})" title="Move back to To Do" aria-label="Undo completion"></button>
+          <span class="task-text done-text" ondblclick="startEdit('done',${i},this)">${escHtml(t.text)}</span>
+          <div class="task-meta">
+            <span class="task-time">${escHtml(t.time || '')}</span>
+            <button class="edit-btn" onclick="startEdit('done',${i},this.closest('.task-item').querySelector('.task-text'))" title="Edit task" aria-label="Edit task">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5z"/>
+              </svg>
+            </button>
+            <button class="del-btn" onclick="deleteTask('done', ${i})" title="Delete" aria-label="Delete task">&#x2715;</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    renderEod();
+  }
+
+  function renderEod() {
+    const box   = document.getElementById('eodBox');
+    const stats = document.getElementById('eodStats');
+    const today = dateStr();
+
+    if (dones.length === 0 && todos.length === 0) {
+      box.textContent = 'No tasks recorded yet today.';
+      stats.textContent = '';
+      return;
+    }
+
+    const lines = [`EOD Update — ${today}\n`];
+
+    if (dones.length > 0) {
+      lines.push('Completed:');
+      dones.forEach(t => lines.push(`  ✓  ${t.text}${t.time ? '  (' + t.time + ')' : ''}`));
+    }
+
+    if (todos.length > 0) {
+      if (dones.length > 0) lines.push('');
+      lines.push('In progress / pending:');
+      todos.forEach(t => lines.push(`  ○  ${t.text}`));
+    }
+
+    box.textContent = lines.join('\n');
+    stats.textContent = `${dones.length} done · ${todos.length} pending`;
+  }
+
+  /* ── Actions ── */
+  function addTask() {
+    const input = document.getElementById('taskInput');
+    const text  = input.value.trim();
+    if (!text) {
+      input.focus();
+      return;
+    }
+    todos.push({ id: uid(), text });
+    input.value = '';
+    saveTodos();
+    render();
+    input.focus();
+  }
+
+  window.completeTask = function(i) {
+    const task = todos.splice(i, 1)[0];
+    task.time = timeStr();
+    dones.unshift(task);
+    saveTodos();
+    saveDones();
+    render();
+  };
+
+  window.undoTask = function(i) {
+    const task = dones.splice(i, 1)[0];
+    delete task.time;
+    todos.push(task);
+    saveTodos();
+    saveDones();
+    render();
+  };
+
+  window.deleteTask = function(list, i) {
+    if (list === 'todo') {
+      todos.splice(i, 1);
+      saveTodos();
+    } else {
+      dones.splice(i, 1);
+      saveDones();
+    }
+    render();
+  };
+
+  /* ── Inline Edit ── */
+  window.startEdit = function(list, i, spanEl) {
+    if (spanEl.querySelector('input')) return; // already editing
+    const current = (list === 'todo' ? todos : dones)[i].text;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = current;
+    input.className = 'task-edit-input';
+    spanEl.replaceWith(input);
+    input.focus();
+    input.selectionStart = input.selectionEnd = input.value.length;
+
+    function commit() {
+      const val = input.value.trim();
+      if (val && val !== current) {
+        (list === 'todo' ? todos : dones)[i].text = val;
+        list === 'todo' ? saveTodos() : saveDones();
+      }
+      render();
+    }
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter')  { e.preventDefault(); commit(); }
+      if (e.key === 'Escape') { render(); } // cancel
+    });
+    input.addEventListener('blur', commit);
+  };
+
+  /* ── Clear done ── */
+  document.getElementById('clearDoneBtn').addEventListener('click', function() {
+    if (dones.length === 0) return;
+    if (confirm('Clear all completed tasks for today?')) {
+      dones = [];
+      saveDones();
+      render();
+    }
+  });
+
+  /* ── Copy EOD ── */
+  document.getElementById('copyBtn').addEventListener('click', function() {
+    const text = document.getElementById('eodBox').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.innerHTML = `
+        <svg class="copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2.5 8.5l3 3 8-7"/>
+        </svg>
+        Copied!
+      `;
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = `
+          <svg class="copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="5" width="9" height="9" rx="1.5"/>
+            <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/>
+          </svg>
+          Copy summary
+        `;
+        btn.classList.remove('copied');
+      }, 2500);
+    });
+  });
+
+  /* ── Add task triggers ── */
+  document.getElementById('addBtn').addEventListener('click', addTask);
+  document.getElementById('taskInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addTask();
+  });
+
+  /* ── Date label ── */
+  document.getElementById('dateLabel').textContent = dateStr();
+
+  /* ── Init ── */
+  load();
+  render();
+</script>
+</body>
+</html>
