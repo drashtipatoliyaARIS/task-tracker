@@ -316,18 +316,19 @@
       background: var(--red-dim);
     }
 
+    /* ── Edit Button ──────────────────────────────────── */
     .edit-btn {
       background: none;
       border: none;
       cursor: pointer;
       color: var(--text-3);
+      font-size: 13px;
       line-height: 1;
-      padding: 3px 5px;
+      padding: 3px 6px;
       border-radius: 5px;
       opacity: 0;
       transition: opacity 0.15s, color 0.15s, background 0.15s;
-      display: flex;
-      align-items: center;
+      font-family: var(--font-sans);
     }
 
     .task-item:hover .edit-btn { opacity: 1; }
@@ -337,6 +338,7 @@
       background: var(--accent-dim);
     }
 
+    /* ── Inline Edit Input ────────────────────────────── */
     .task-edit-input {
       flex: 1;
       background: var(--bg-raised);
@@ -443,6 +445,97 @@
       to   { opacity: 0; }
     }
 
+    /* ── Priority Selector ────────────────────────────── */
+    .priority-select {
+      height: 42px;
+      padding: 0 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-md);
+      border-radius: var(--radius-md);
+      color: var(--text-2);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235a5652' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+
+    .priority-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    /* ── Priority Badge ───────────────────────────────── */
+    .priority-badge {
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+
+    .priority-badge.p-high {
+      color: #e07b5c;
+      background: rgba(224,123,92,0.12);
+      border-color: rgba(224,123,92,0.25);
+    }
+
+    .priority-badge.p-medium {
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-color: rgba(200,169,110,0.25);
+    }
+
+    .priority-badge.p-low {
+      color: var(--text-3);
+      background: var(--bg-raised);
+      border-color: var(--border);
+    }
+
+    /* ── Drag Handle ──────────────────────────────────── */
+    .drag-handle {
+      display: flex;
+      align-items: center;
+      cursor: grab;
+      color: var(--text-3);
+      padding: 2px 2px;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .task-item:hover .drag-handle { opacity: 1; }
+    .drag-handle:active { cursor: grabbing; }
+
+    .drag-handle svg {
+      width: 14px;
+      height: 14px;
+      pointer-events: none;
+    }
+
+    /* ── Drag States ──────────────────────────────────── */
+    .task-item.dragging {
+      opacity: 0.4;
+      border-style: dashed;
+      border-color: var(--accent);
+    }
+
+    .task-item.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      transform: scale(1.01);
+    }
+
     /* ── Scrollbar (webkit) ───────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -472,6 +565,11 @@
   <!-- Add Bar -->
   <div class="add-bar">
     <input type="text" id="taskInput" placeholder="Add a new task…" autocomplete="off" />
+    <select class="priority-select" id="prioritySelect" title="Set priority">
+      <option value="high">🔴 High</option>
+      <option value="medium" selected>🟡 Med</option>
+      <option value="low">⚪ Low</option>
+    </select>
     <button class="add-btn" id="addBtn">+ Add</button>
   </div>
 
@@ -527,51 +625,36 @@
   let todos = [];
   let dones = [];
 
+  const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+  const PRIORITY_LABEL = { high: 'High', medium: 'Med', low: 'Low' };
+
   /* ── Utils ── */
-  function todayKey() {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  function timeStr() {
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  function dateStr() {
-    return new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-  }
+  function todayKey() { return new Date().toISOString().slice(0, 10); }
+  function timeStr()  { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+  function dateStr()  { return new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }); }
 
   function escHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  function uid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
 
   /* ── Persist ── */
-  function saveTodos() {
-    localStorage.setItem(STORAGE_KEY_TODO, JSON.stringify(todos));
-  }
-
-  function saveDones() {
-    localStorage.setItem(STORAGE_KEY_DONE(), JSON.stringify(dones));
-  }
+  function saveTodos() { localStorage.setItem(STORAGE_KEY_TODO, JSON.stringify(todos)); }
+  function saveDones() { localStorage.setItem(STORAGE_KEY_DONE(), JSON.stringify(dones)); }
 
   function load() {
     try { todos = JSON.parse(localStorage.getItem(STORAGE_KEY_TODO)) || []; }
     catch(e) { todos = []; }
     try { dones = JSON.parse(localStorage.getItem(STORAGE_KEY_DONE())) || []; }
     catch(e) { dones = []; }
-
-    // Auto-clear done lists from previous days
-    const todayDoneKey = STORAGE_KEY_DONE();
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('dtt_done_') && k !== todayDoneKey)
-      .forEach(k => localStorage.removeItem(k));
+    // backfill priority for old tasks
+    todos.forEach(t => { if (!t.priority) t.priority = 'medium'; });
+    dones.forEach(t => { if (!t.priority) t.priority = 'medium'; });
   }
+
+  /* ── Drag State ── */
+  let dragSrcIndex = null;
 
   /* ── Render ── */
   function render() {
@@ -586,16 +669,30 @@
       todoList.innerHTML = '<div class="empty">Nothing pending — you\'re all clear ✓</div>';
     } else {
       todoList.innerHTML = todos.map((t, i) => `
-        <div class="task-item" data-i="${i}">
+        <div class="task-item"
+             data-i="${i}"
+             draggable="true"
+             ondragstart="onDragStart(event,${i})"
+             ondragover="onDragOver(event)"
+             ondrop="onDrop(event,${i})"
+             ondragend="onDragEnd(event)"
+             ondragleave="onDragLeave(event)">
+          <span class="drag-handle" title="Drag to reorder">
+            <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="4.5" cy="3.5" r="1" fill="currentColor"/>
+              <circle cx="9.5" cy="3.5" r="1" fill="currentColor"/>
+              <circle cx="4.5" cy="7"   r="1" fill="currentColor"/>
+              <circle cx="9.5" cy="7"   r="1" fill="currentColor"/>
+              <circle cx="4.5" cy="10.5" r="1" fill="currentColor"/>
+              <circle cx="9.5" cy="10.5" r="1" fill="currentColor"/>
+            </svg>
+          </span>
           <button class="cb" onclick="completeTask(${i})" title="Mark as done" aria-label="Complete task"></button>
-          <span class="task-text" ondblclick="startEdit('todo',${i},this)">${escHtml(t.text)}</span>
+          <span class="task-text" ondblclick="editTask(${i})" title="Double-click to edit">${escHtml(t.text)}</span>
           <div class="task-meta">
-            <button class="edit-btn" onclick="startEdit('todo',${i},this.closest('.task-item').querySelector('.task-text'))" title="Edit task" aria-label="Edit task">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5z"/>
-              </svg>
-            </button>
-            <button class="del-btn" onclick="deleteTask('todo', ${i})" title="Delete" aria-label="Delete task">&#x2715;</button>
+            <span class="priority-badge p-${t.priority || 'medium'}" onclick="cyclePriority(${i})" title="Click to change priority" style="cursor:pointer">${PRIORITY_LABEL[t.priority || 'medium']}</span>
+            <button class="edit-btn" onclick="editTask(${i})" title="Edit task" aria-label="Edit task">✎</button>
+            <button class="del-btn" onclick="deleteTask('todo',${i})" title="Delete" aria-label="Delete task">&#x2715;</button>
           </div>
         </div>
       `).join('');
@@ -608,15 +705,11 @@
       doneList.innerHTML = dones.map((t, i) => `
         <div class="task-item is-done" data-i="${i}">
           <button class="cb checked" onclick="undoTask(${i})" title="Move back to To Do" aria-label="Undo completion"></button>
-          <span class="task-text done-text" ondblclick="startEdit('done',${i},this)">${escHtml(t.text)}</span>
+          <span class="task-text done-text">${escHtml(t.text)}</span>
           <div class="task-meta">
+            <span class="priority-badge p-${t.priority || 'medium'}">${PRIORITY_LABEL[t.priority || 'medium']}</span>
             <span class="task-time">${escHtml(t.time || '')}</span>
-            <button class="edit-btn" onclick="startEdit('done',${i},this.closest('.task-item').querySelector('.task-text'))" title="Edit task" aria-label="Edit task">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5z"/>
-              </svg>
-            </button>
-            <button class="del-btn" onclick="deleteTask('done', ${i})" title="Delete" aria-label="Delete task">&#x2715;</button>
+            <button class="del-btn" onclick="deleteTask('done',${i})" title="Delete" aria-label="Delete task">&#x2715;</button>
           </div>
         </div>
       `).join('');
@@ -646,7 +739,7 @@
     if (todos.length > 0) {
       if (dones.length > 0) lines.push('');
       lines.push('In progress / pending:');
-      todos.forEach(t => lines.push(`  ○  ${t.text}`));
+      todos.forEach(t => lines.push(`  ○  [${(t.priority||'med').toUpperCase()}] ${t.text}`));
     }
 
     box.textContent = lines.join('\n');
@@ -655,83 +748,128 @@
 
   /* ── Actions ── */
   function addTask() {
-    const input = document.getElementById('taskInput');
-    const text  = input.value.trim();
-    if (!text) {
-      input.focus();
-      return;
-    }
-    todos.push({ id: uid(), text });
+    const input    = document.getElementById('taskInput');
+    const sel      = document.getElementById('prioritySelect');
+    const text     = input.value.trim();
+    const priority = sel.value;
+    if (!text) { input.focus(); return; }
+
+    todos.push({ id: uid(), text, priority });
+    // stable-sort: new task slots into priority group at bottom of that group
+    todos.sort((a, b) => PRIORITY_ORDER[a.priority||'medium'] - PRIORITY_ORDER[b.priority||'medium']);
+
     input.value = '';
     saveTodos();
     render();
     input.focus();
   }
 
+  window.cyclePriority = function(i) {
+    const cycle = { high: 'medium', medium: 'low', low: 'high' };
+    todos[i].priority = cycle[todos[i].priority || 'medium'];
+    saveTodos();
+    render();
+  };
+
+  window.editTask = function(i) {
+    const todoList = document.getElementById('todoList');
+    const item = todoList.querySelector(`.task-item[data-i="${i}"]`);
+    if (!item) return;
+
+    const textSpan = item.querySelector('.task-text');
+    const currentText = todos[i].text;
+
+    // Replace span with input
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'task-edit-input';
+    input.value = currentText;
+    textSpan.replaceWith(input);
+    input.focus();
+    input.select();
+
+    // Hide edit btn while editing
+    const editBtn = item.querySelector('.edit-btn');
+    if (editBtn) editBtn.style.opacity = '0';
+
+    function saveEdit() {
+      const newText = input.value.trim();
+      if (newText && newText !== currentText) {
+        todos[i].text = newText;
+        saveTodos();
+      }
+      render();
+    }
+
+    function cancelEdit() { render(); }
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter')  { e.preventDefault(); saveEdit(); }
+      if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+    });
+    input.addEventListener('blur', saveEdit);
+  };
+
   window.completeTask = function(i) {
     const task = todos.splice(i, 1)[0];
     task.time = timeStr();
     dones.unshift(task);
-    saveTodos();
-    saveDones();
-    render();
+    saveTodos(); saveDones(); render();
   };
 
   window.undoTask = function(i) {
     const task = dones.splice(i, 1)[0];
     delete task.time;
     todos.push(task);
-    saveTodos();
-    saveDones();
-    render();
+    saveTodos(); saveDones(); render();
   };
 
   window.deleteTask = function(list, i) {
-    if (list === 'todo') {
-      todos.splice(i, 1);
-      saveTodos();
-    } else {
-      dones.splice(i, 1);
-      saveDones();
-    }
+    if (list === 'todo') { todos.splice(i, 1); saveTodos(); }
+    else { dones.splice(i, 1); saveDones(); }
     render();
   };
 
-  /* ── Inline Edit ── */
-  window.startEdit = function(list, i, spanEl) {
-    if (spanEl.querySelector('input')) return; // already editing
-    const current = (list === 'todo' ? todos : dones)[i].text;
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = current;
-    input.className = 'task-edit-input';
-    spanEl.replaceWith(input);
-    input.focus();
-    input.selectionStart = input.selectionEnd = input.value.length;
+  /* ── Drag & Drop ── */
+  window.onDragStart = function(e, i) {
+    dragSrcIndex = i;
+    e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.classList.add('dragging');
+  };
 
-    function commit() {
-      const val = input.value.trim();
-      if (val && val !== current) {
-        (list === 'todo' ? todos : dones)[i].text = val;
-        list === 'todo' ? saveTodos() : saveDones();
-      }
-      render();
-    }
+  window.onDragOver = function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
+  };
 
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter')  { e.preventDefault(); commit(); }
-      if (e.key === 'Escape') { render(); } // cancel
-    });
-    input.addEventListener('blur', commit);
+  window.onDragLeave = function(e) {
+    e.currentTarget.classList.remove('drag-over');
+  };
+
+  window.onDrop = function(e, dropIndex) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    if (dragSrcIndex === null || dragSrcIndex === dropIndex) return;
+    const [moved] = todos.splice(dragSrcIndex, 1);
+    todos.splice(dropIndex, 0, moved);
+    dragSrcIndex = null;
+    saveTodos();
+    render();
+  };
+
+  window.onDragEnd = function(e) {
+    e.currentTarget.classList.remove('dragging');
+    // clean up any leftover drag-over states
+    document.querySelectorAll('.task-item').forEach(el => el.classList.remove('drag-over'));
+    dragSrcIndex = null;
   };
 
   /* ── Clear done ── */
   document.getElementById('clearDoneBtn').addEventListener('click', function() {
     if (dones.length === 0) return;
     if (confirm('Clear all completed tasks for today?')) {
-      dones = [];
-      saveDones();
-      render();
+      dones = []; saveDones(); render();
     }
   });
 
